@@ -1,5 +1,7 @@
 package com.flightapp.user.model;
 
+import java.time.LocalDateTime;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -40,5 +42,12 @@ public class Ticket {
 	
 	@Column(name="SEATNUMBERS")
 	private String seatNumbers;
+	
+	@Column(name="iscancelled")
+	private Boolean isCancelled;
+	
+	@Column(name="createdtimestamp")
+	private LocalDateTime createdTimeStamp;
+	
 	
 }

@@ -15,12 +15,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.flightapp.user.exception.SeatsNotFoundException;
 import com.flightapp.user.exception.TicketCannotBeCancelledException;
 import com.flightapp.user.exception.TicketNotPresentException;
 import com.flightapp.user.model.Ticket;
 import com.flightapp.user.service.BookingService;
 import com.flightapp.user.ui.ApiResponse;
 import com.flightapp.user.ui.BookTicketDTO;
+import com.flightapp.user.ui.Booking;
 import com.flightapp.user.ui.FlightDTO;
 import com.flightapp.user.ui.FlightSearchRequest;
 import com.flightapp.user.ui.TicketDTO;
@@ -45,7 +47,8 @@ public class BookingController {
 		modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
 		TicketDTO ticketDTO = modelMapper.map(ticket, TicketDTO.class);
 		ticketDTO.setUserEmail(bookrequest.getUserEmail());
-		ticketDTO.setUserName(bookrequest.getUserName());
+		//ticketDTO.setUserName(bookrequest.getUserName());
+		
 		return ResponseEntity.ok(ticketDTO);
 	}
 
@@ -63,11 +66,11 @@ public class BookingController {
 	}
 
 	@GetMapping("/flight/booking/history/{emailId}")
-	public ResponseEntity<List<TicketDTO>> getBookingsByEmail(@PathVariable("emailId") String emailId)
+	public ResponseEntity<List<Booking>> getBookingsByEmail(@PathVariable("emailId") String emailId)
 			throws TicketNotPresentException {
-		List<TicketDTO> ticketList = bookingService.getBookingByEmail(emailId);
+		List<Booking> ticketList = bookingService.getBookingByEmail(emailId);
 		if (ticketList.isEmpty()) {
-			throw new TicketNotPresentException("No Tickets found for the user email");
+			throw new TicketNotPresentException("No Booking found for the user email");
 		}
 
 		return ResponseEntity.ok(ticketList);
@@ -86,6 +89,13 @@ public class BookingController {
 
 		List<FlightDTO> bookingList = bookingService.getAllFlights(flightSearchRequest);
 		return ResponseEntity.status(HttpStatus.OK).body(bookingList);
+	}
+	
+	@GetMapping("/flight/availableseats/{flightid}")
+	public ResponseEntity<List<String>> getAllSeats(@PathVariable Integer flightid) throws SeatsNotFoundException{
+		
+		return ResponseEntity.status(HttpStatus.OK).body(bookingService.getSeatsByFlightId(flightid));
+		
 	}
 
 }

@@ -1,6 +1,6 @@
 package com.flightapp.user.ui;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,8 +15,7 @@ public class FlightSearchRequest {
 	
 	private String fromLocation;
 	private String destination;
-	private LocalDateTime departureTime;
-	private LocalDateTime arrivalTime;
+	private LocalDate departureDate;
 	
 
 }

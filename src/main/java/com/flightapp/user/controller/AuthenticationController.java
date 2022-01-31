@@ -73,6 +73,7 @@ public class AuthenticationController {
 	@PostMapping("/register")
     public ResponseEntity<CreateUserResponseModel> createUser(@Validated @RequestBody CreateusrRequestModel userDetails)
     {
+		System.out.println("Request came");
 		CreateUserResponseModel userResponseModel = userService.creatuser(userDetails);
 		return ResponseEntity.status(HttpStatus.CREATED).body(userResponseModel);
 		

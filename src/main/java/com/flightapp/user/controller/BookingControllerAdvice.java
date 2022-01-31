@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.flightapp.user.exception.EntityNotPresentException;
+import com.flightapp.user.exception.SeatsNotFoundException;
 import com.flightapp.user.exception.SeatsNotUpdatedException;
 import com.flightapp.user.exception.TicketCannotBeCancelledException;
 import com.flightapp.user.exception.TicketNotPresentException;
@@ -39,6 +40,13 @@ public class BookingControllerAdvice {
 	
 	@ExceptionHandler
 	public ResponseEntity<ErrorResponse> handleEntityNotPresentException(EntityNotPresentException ex)
+	{
+		ErrorResponse response = new ErrorResponse(ex.getMessage(),HttpStatus.NOT_FOUND.value(),LocalDateTime.now());
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+	}
+	
+	@ExceptionHandler
+	public ResponseEntity<ErrorResponse> handleSeatNotFoundException (SeatsNotFoundException ex)
 	{
 		ErrorResponse response = new ErrorResponse(ex.getMessage(),HttpStatus.NOT_FOUND.value(),LocalDateTime.now());
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);

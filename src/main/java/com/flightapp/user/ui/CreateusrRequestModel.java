@@ -12,9 +12,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CreateusrRequestModel {
-	
-    @NotNull(message="User Id cannot be empty")
-	private String userId;
+
 	
     @NotNull(message="Firstname cannot be empty")
 	private String firstName;

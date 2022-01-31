@@ -2,9 +2,7 @@ package com.flightapp.user.ui;
 
 import java.util.List;
 
-import javax.persistence.ManyToOne;
-
-import com.flightapp.user.model.Userentity;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.flightapp.user.model.mealpreference;
 
 import lombok.AllArgsConstructor;
@@ -20,10 +18,12 @@ public class BookTicketDTO {
 	
 	private mealpreference mealPreference;
 	
-	private String userName;
+	//private String userName;
 	
 	private String userEmail;
 	
+	//@JsonDeserialize(using = CustomStringDeserializer.class)
+	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 	private List<Passenger> passengersList;
 	
 	private  Double price;

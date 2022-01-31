@@ -1,9 +1,6 @@
 package com.flightapp.user.ui;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import javax.persistence.Column;
+import java.time.LocalDate;
 
 import com.flightapp.user.model.mealpreference;
 
@@ -16,8 +13,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-public class TicketDTO {
-
+public class Booking {
+	
 	private Integer PNR;
 
 	private Integer flightId;
@@ -30,14 +27,20 @@ public class TicketDTO {
 
 	private String passengerdetails;
 
-	private String userName;
-
 	private String userEmail;
 	
 	private String seatNumbers;
 	
-	private Boolean isCancelled;
+    private Boolean isCancelled;
+    
+    private String flightName;
 	
-	private LocalDateTime createdTimeStamp;
+	private String fromLocation;
+	
+	private String destination;
+	
+	private LocalDate departureDate;
+	
+	private String airlineName;
 
 }

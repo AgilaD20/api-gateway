@@ -1,10 +1,14 @@
 package com.flightapp.user.service;
 
-import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -22,6 +26,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.flightapp.user.config.JWTutil;
 import com.flightapp.user.exception.EntityNotPresentException;
+import com.flightapp.user.exception.SeatsNotFoundException;
 import com.flightapp.user.exception.SeatsNotUpdatedException;
 import com.flightapp.user.exception.TicketCannotBeCancelledException;
 import com.flightapp.user.exception.TicketNotPresentException;
@@ -29,11 +34,12 @@ import com.flightapp.user.model.Ticket;
 import com.flightapp.user.model.Userentity;
 import com.flightapp.user.repository.TicketRepository;
 import com.flightapp.user.repository.UserRepository;
+import com.flightapp.user.ui.ApiResponse;
 import com.flightapp.user.ui.BookTicketDTO;
+import com.flightapp.user.ui.Booking;
 import com.flightapp.user.ui.FlightDTO;
 import com.flightapp.user.ui.FlightDTOList;
 import com.flightapp.user.ui.FlightSearchRequest;
-import com.flightapp.user.ui.TicketDTO;
 import com.flightapp.user.ui.UpdateSeatDTO;
 
 @Service
@@ -43,15 +49,15 @@ public class BookingService {
 
 	private final UserRepository userRepository;
 
-	private final ModelMapper modelMapper;
-	;;
+	private final ModelMapper modelMapper;;;
 	private final RestTemplate restTemplate;
 
 	private final JWTutil jwtutil;
-	
-	private static final String FLIGHT_URL ="http://localhost:8082/api/v1.0/common/flight";
 
-	public BookingService(TicketRepository ticketRepository, UserRepository userRepository, ModelMapper modelMapper, RestTemplate restTemplate, JWTutil jwtutil) {
+	private static final String FLIGHT_URL = "http://localhost:8082/api/v1.0/common/flight";
+
+	public BookingService(TicketRepository ticketRepository, UserRepository userRepository, ModelMapper modelMapper,
+			RestTemplate restTemplate, JWTutil jwtutil) {
 		this.ticketRepository = ticketRepository;
 		this.userRepository = userRepository;
 		this.modelMapper = modelMapper;
@@ -62,6 +68,7 @@ public class BookingService {
 	public Ticket bookticket(Integer flightid, BookTicketDTO ticketDTO) {
 		modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
 		Ticket ticket = new Ticket();
+		ticket.setCreatedTimeStamp(LocalDateTime.now());
 		ticket.setFlightId(flightid);
 		ticket.setMealPreference(ticketDTO.getMealPreference());
 		ticket.setPassengerCount(ticketDTO.getPassengersList().size());
@@ -70,104 +77,139 @@ public class BookingService {
 		Userentity user = userRepository.findByEmail(ticketDTO.getUserEmail());
 		System.out.println(user == null);
 		ticket.setUser(user);
-		
-		HttpHeaders headers= getHeaders();
-		HttpEntity<UpdateSeatDTO> request = new HttpEntity<>(new UpdateSeatDTO(ticketDTO.getPassengersList().size(),ticketDTO.getSeatNumbers(),flightid),headers);
-		try
-		{
-			restTemplate
-					  .exchange(FLIGHT_URL+"/udpateSeats", HttpMethod.POST, request,Object.class);
-		}
-		catch(HttpClientErrorException ex)
-				{
-			
+
+		HttpHeaders headers = getHeaders();
+		HttpEntity<UpdateSeatDTO> request = new HttpEntity<>(
+				new UpdateSeatDTO(ticketDTO.getPassengersList().size(), ticketDTO.getSeatNumbers(), flightid), headers);
+		try {
+			restTemplate.exchange(FLIGHT_URL + "/udpateSeats", HttpMethod.POST, request, Object.class);
+		} catch (HttpClientErrorException ex) {
+
 			throw new SeatsNotUpdatedException("Flight or Seat is not available");
-				}
-		
+		}
+
 		ticket.setSeatNumbers(
 				ticketDTO.getSeatNumbers().stream().map(s -> s.toString()).collect(Collectors.joining("|")));
-			HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
-			ResponseEntity<FlightDTO> flightDTOResponse = restTemplate.exchange(FLIGHT_URL+"/{flightId}",HttpMethod.GET,jwtEntity,FlightDTO.class,flightid);
-			ticket.setPrice(flightDTOResponse.getBody().getPrice() * ticketDTO.getPassengersList().size());
-			
-			return ticketRepository.save(ticket);
-		
+		HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
+		ResponseEntity<FlightDTO> flightDTOResponse = restTemplate.exchange(FLIGHT_URL + "/{flightId}", HttpMethod.GET,
+				jwtEntity, FlightDTO.class, flightid);
+		ticket.setPrice(flightDTOResponse.getBody().getPrice() * ticketDTO.getPassengersList().size());
+
+		return ticketRepository.save(ticket);
+
 	}
 
 	public Optional<Ticket> getTicketByPNR(Integer PNR) {
 		return ticketRepository.findById(PNR);
 	}
 
-	public List<TicketDTO> getBookingByEmail(String emailId) {
+	public List<Booking> getBookingByEmail(String emailId) {
 		modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
 		Userentity user = userRepository.findByEmail(emailId);
-		
-		if(user==null)
-		{
+
+		if (user == null) {
 			throw new EntityNotPresentException("User email not present");
 		}
-		
-		List<Ticket> ticketList =  ticketRepository.findAllByUser(user);
-		
-		List<TicketDTO> ticketDTOList = ticketList.stream().map(t->
-		{	
-	    TicketDTO dto = modelMapper.map(t, TicketDTO.class);
-	    dto.setUserName(user.getFirstName()+" "+user.getLastName());
-	    return dto;
-	    }).collect(Collectors.toList());
 
-       return ticketDTOList;
+		List<Ticket> ticketList = ticketRepository.findAllByUserOrderByCreatedTimeStampDesc(user);
+
+		/*
+		 * List<TicketDTO> ticketDTOList = ticketList.stream().map(t-> { TicketDTO dto =
+		 * modelMapper.map(t, TicketDTO.class);
+		 * dto.setUserName(user.getFirstName()+" "+user.getLastName()); return dto;
+		 * }).collect(Collectors.toList());
+		 */
+
+		HttpHeaders headers = getHeaders();
+		HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
+
+		List<Booking> bookingList = ticketList.stream().map(t -> {
+			Booking book = modelMapper.map(t, Booking.class);
+			ResponseEntity<FlightDTO> flightDTOResponse = restTemplate.exchange(FLIGHT_URL + "/{flightId}",
+					HttpMethod.GET, jwtEntity, FlightDTO.class, t.getFlightId());
+			FlightDTO dto = flightDTOResponse.getBody();
+			book.setAirlineName(dto.getAirlineName());
+			book.setDepartureDate(dto.getDepartureDate());
+			book.setFlightName(dto.getFlightName());
+			book.setDestination(dto.getDestination());
+			book.setFromLocation(dto.getFromLocation());
+			return book;
+		}).collect(Collectors.toList());
+
+		return bookingList;
 	}
 
+	@Transactional
 	public void deleteBookingByEmail(Integer pNR) throws TicketNotPresentException, TicketCannotBeCancelledException {
-		
-		LocalDateTime currentTime = LocalDateTime.now();
 
-		Optional<Ticket> ticket = ticketRepository.findById(pNR);
-		if (!ticket.isPresent()) {
+		LocalDate currentTime = LocalDate.now();
+
+		Optional<Ticket> ticketOptional = ticketRepository.findById(pNR);
+		if (!ticketOptional.isPresent()) {
 			throw new TicketNotPresentException("Ticket is not found for the given PNR");
 		}
-		ticket.get().getFlightId();
-		HttpHeaders headers= getHeaders();
-		//HttpEntity<FlightSearchRequest> jwtEntity = new HttpEntity<FlightSearchRequest>(flightSearchRequest,headers);
+		ticketOptional.get().getFlightId();
+		Ticket ticket = ticketOptional.get();
+		HttpHeaders headers = getHeaders();
+		// HttpEntity<FlightSearchRequest> jwtEntity = new
+		// HttpEntity<FlightSearchRequest>(flightSearchRequest,headers);
 		// Implement to get the flight departure date
-		//FlightDTO flightDTO = restTemplate.getForObject("http://localhost:8082/api/v1.0/flight/departuredate/{flightId}",FlightDTO.class,pNR);
+		// FlightDTO flightDTO =
+		// restTemplate.getForObject("http://localhost:8082/api/v1.0/flight/departuredate/{flightId}",FlightDTO.class,pNR);
 		HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
-		ResponseEntity<FlightDTO> flightDTOResponse = restTemplate.exchange(FLIGHT_URL+"/{flightId}",HttpMethod.GET,jwtEntity,FlightDTO.class,ticket.get().getFlightId());
-		 if(Duration.between(currentTime, flightDTOResponse.getBody().getDepartureTime()).toHours()<24) 
-		 { throw new
-		 TicketCannotBeCancelledException("Ticket cannot be cancelled before 24 hours of departure time"
-		 ); }
-		 
-		ticketRepository.deleteById(pNR);
+		ResponseEntity<FlightDTO> flightDTOResponse = restTemplate.exchange(FLIGHT_URL + "/{flightId}", HttpMethod.GET,
+				jwtEntity, FlightDTO.class, ticketOptional.get().getFlightId());
+		if (Period.between(currentTime, flightDTOResponse.getBody().getDepartureDate()).getDays() < 1) {
+			throw new TicketCannotBeCancelledException("Ticket cannot be cancelled before 24 hours of departure time");
+		}
+
+		List<String> seatNumbers = Arrays.asList(ticket.getSeatNumbers().split("\\|"));
+		UpdateSeatDTO updateseatRequest = new UpdateSeatDTO(seatNumbers.size(), seatNumbers,
+				flightDTOResponse.getBody().getFlightID());
+		HttpEntity<UpdateSeatDTO> seatEntity = new HttpEntity<UpdateSeatDTO>(updateseatRequest,headers);
+		restTemplate.exchange(FLIGHT_URL + "/addseatsback", HttpMethod.POST,
+				seatEntity, ApiResponse.class);
+		ticketRepository.updateCancelledById(pNR);
 
 	}
 
 	public List<FlightDTO> getAllFlights(FlightSearchRequest flightSearchRequest) {
-		HttpHeaders headers= getHeaders();
-		HttpEntity<FlightSearchRequest> jwtEntity = new HttpEntity<FlightSearchRequest>(flightSearchRequest,headers);
-		try
-		{
-			ResponseEntity<FlightDTOList> flightList = restTemplate.exchange(FLIGHT_URL+"/flights", HttpMethod.POST, jwtEntity,FlightDTOList.class);
+		HttpHeaders headers = getHeaders();
+		HttpEntity<FlightSearchRequest> jwtEntity = new HttpEntity<FlightSearchRequest>(flightSearchRequest, headers);
+		try {
+			ResponseEntity<FlightDTOList> flightList = restTemplate.exchange(FLIGHT_URL + "/flights", HttpMethod.POST,
+					jwtEntity, FlightDTOList.class);
 			return flightList.getBody().getFlightList();
-		}
-		catch(Exception ex )
-		{
+		} catch (Exception ex) {
 			throw new EntityNotPresentException("No Flight is present for the given criteria");
 		}
-		
-		
+
 	}
-	
-	public HttpHeaders getHeaders()
-	{
-	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-	User userDetails = new User(auth.getPrincipal().toString(),auth.getCredentials().toString(),auth.getAuthorities());
-	String token = "Bearer " + jwtutil.generateToken(userDetails);
-	HttpHeaders headers = new HttpHeaders();
-	headers.set("Authorization", token);
-	return headers;
-		
+
+	public List<String> getSeatsByFlightId(Integer flightid) throws SeatsNotFoundException {
+		HttpHeaders headers = getHeaders();
+		HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
+
+		try {
+			ResponseEntity<String> flightDTOResponse = restTemplate.exchange(FLIGHT_URL + "/availableseat/{flightId}",
+					HttpMethod.GET, jwtEntity, String.class, flightid);
+			List<String> seatNumbers = Arrays.asList(flightDTOResponse.getBody().split("\\|"));
+			return seatNumbers;
+		} catch (Exception ex) {
+			throw new SeatsNotFoundException("An unexpected error occured");
+		}
+
+	}
+
+	public HttpHeaders getHeaders() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		User userDetails = new User(auth.getPrincipal().toString(), auth.getCredentials().toString(),
+				auth.getAuthorities());
+		String token = "Bearer " + jwtutil.generateToken(userDetails);
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", token);
+		return headers;
+
 	}
 
 }

@@ -12,7 +12,6 @@ import lombok.Setter;
 public class CreateUserResponseModel {
 	
 
-	private String userId;
 	
 	private String firstName;
 	

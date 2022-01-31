@@ -33,8 +33,6 @@ public class Userentity implements Serializable {
 	@GeneratedValue
 	@Column(name = "ID")
 	private Integer id;
-	@Column(name = "USERID",unique=true)
-	private String userId;
 	@Column(name = "FIRSTNAME")
 	private String firstName;
 	@Column(name = "LASTNAME")
