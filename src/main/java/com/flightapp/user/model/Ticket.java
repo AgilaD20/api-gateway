@@ -1,6 +1,8 @@
 package com.flightapp.user.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -9,8 +11,9 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-
 import lombok.Data;
+
+
 
 @Entity
 @Data
@@ -48,6 +51,9 @@ public class Ticket {
 	
 	@Column(name="createdtimestamp")
 	private LocalDateTime createdTimeStamp;
+	
+	@Column(name="departuredate")
+	private LocalDate departureDate;
 	
 	
 }

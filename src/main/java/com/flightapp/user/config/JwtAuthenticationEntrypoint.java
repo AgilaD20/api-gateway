@@ -23,7 +23,12 @@ public class JwtAuthenticationEntrypoint implements AuthenticationEntryPoint, Se
 	@Override
 	public void commence(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException authException) throws IOException {
-
+		//response.set
+        response.setHeader("message", "Please login again with correct credentials or sign up for new user");
+        if(response.containsHeader("message")){
+        	System.out.println("message is already there");
+        	response.getHeader("message");
+        }
 		response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
 	}
 

@@ -1,8 +1,6 @@
 package com.flightapp.user.ui;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.flightapp.user.config.CustomStringDeserializer;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

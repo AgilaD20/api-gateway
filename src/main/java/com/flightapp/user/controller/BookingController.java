@@ -25,6 +25,7 @@ import com.flightapp.user.ui.BookTicketDTO;
 import com.flightapp.user.ui.Booking;
 import com.flightapp.user.ui.FlightDTO;
 import com.flightapp.user.ui.FlightSearchRequest;
+import com.flightapp.user.ui.SearchAvailableSeats;
 import com.flightapp.user.ui.TicketDTO;
 
 @RestController
@@ -47,8 +48,6 @@ public class BookingController {
 		modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
 		TicketDTO ticketDTO = modelMapper.map(ticket, TicketDTO.class);
 		ticketDTO.setUserEmail(bookrequest.getUserEmail());
-		//ticketDTO.setUserName(bookrequest.getUserName());
-		
 		return ResponseEntity.ok(ticketDTO);
 	}
 
@@ -90,12 +89,14 @@ public class BookingController {
 		List<FlightDTO> bookingList = bookingService.getAllFlights(flightSearchRequest);
 		return ResponseEntity.status(HttpStatus.OK).body(bookingList);
 	}
-	
-	@GetMapping("/flight/availableseats/{flightid}")
-	public ResponseEntity<List<String>> getAllSeats(@PathVariable Integer flightid) throws SeatsNotFoundException{
-		
-		return ResponseEntity.status(HttpStatus.OK).body(bookingService.getSeatsByFlightId(flightid));
-		
+
+
+	@PostMapping("flight/availableseats")
+	public ResponseEntity<List<String>> getAllSeatsDepartureDate(@RequestBody SearchAvailableSeats search)
+			throws SeatsNotFoundException {
+
+		return ResponseEntity.status(HttpStatus.OK).body(bookingService.getSeatsBydepartureDate(search));
+
 	}
 
 }

@@ -1,10 +1,5 @@
 package com.flightapp.user.exception;
 
-import java.util.List;
-
-import com.flightapp.user.model.mealpreference;
-import com.flightapp.user.ui.Passenger;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

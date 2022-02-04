@@ -40,6 +40,7 @@ import com.flightapp.user.ui.Booking;
 import com.flightapp.user.ui.FlightDTO;
 import com.flightapp.user.ui.FlightDTOList;
 import com.flightapp.user.ui.FlightSearchRequest;
+import com.flightapp.user.ui.SearchAvailableSeats;
 import com.flightapp.user.ui.UpdateSeatDTO;
 
 @Service
@@ -65,10 +66,12 @@ public class BookingService {
 		this.jwtutil = jwtutil;
 	}
 
+	@Transactional
 	public Ticket bookticket(Integer flightid, BookTicketDTO ticketDTO) {
 		modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
 		Ticket ticket = new Ticket();
 		ticket.setCreatedTimeStamp(LocalDateTime.now());
+		ticket.setDepartureDate(ticketDTO.getDepartureDate());
 		ticket.setFlightId(flightid);
 		ticket.setMealPreference(ticketDTO.getMealPreference());
 		ticket.setPassengerCount(ticketDTO.getPassengersList().size());
@@ -79,10 +82,10 @@ public class BookingService {
 		ticket.setUser(user);
 
 		HttpHeaders headers = getHeaders();
-		HttpEntity<UpdateSeatDTO> request = new HttpEntity<>(
-				new UpdateSeatDTO(ticketDTO.getPassengersList().size(), ticketDTO.getSeatNumbers(), flightid), headers);
+		HttpEntity<UpdateSeatDTO> request = new HttpEntity<>(new UpdateSeatDTO(ticketDTO.getPassengersList().size(),
+				ticketDTO.getSeatNumbers(), flightid, ticketDTO.getDepartureDate()), headers);
 		try {
-			restTemplate.exchange(FLIGHT_URL + "/udpateSeats", HttpMethod.POST, request, Object.class);
+			restTemplate.exchange(FLIGHT_URL + "/updateSeats", HttpMethod.POST, request, Object.class);
 		} catch (HttpClientErrorException ex) {
 
 			throw new SeatsNotUpdatedException("Flight or Seat is not available");
@@ -112,14 +115,6 @@ public class BookingService {
 		}
 
 		List<Ticket> ticketList = ticketRepository.findAllByUserOrderByCreatedTimeStampDesc(user);
-
-		/*
-		 * List<TicketDTO> ticketDTOList = ticketList.stream().map(t-> { TicketDTO dto =
-		 * modelMapper.map(t, TicketDTO.class);
-		 * dto.setUserName(user.getFirstName()+" "+user.getLastName()); return dto;
-		 * }).collect(Collectors.toList());
-		 */
-
 		HttpHeaders headers = getHeaders();
 		HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
 
@@ -129,7 +124,6 @@ public class BookingService {
 					HttpMethod.GET, jwtEntity, FlightDTO.class, t.getFlightId());
 			FlightDTO dto = flightDTOResponse.getBody();
 			book.setAirlineName(dto.getAirlineName());
-			book.setDepartureDate(dto.getDepartureDate());
 			book.setFlightName(dto.getFlightName());
 			book.setDestination(dto.getDestination());
 			book.setFromLocation(dto.getFromLocation());
@@ -151,24 +145,16 @@ public class BookingService {
 		ticketOptional.get().getFlightId();
 		Ticket ticket = ticketOptional.get();
 		HttpHeaders headers = getHeaders();
-		// HttpEntity<FlightSearchRequest> jwtEntity = new
-		// HttpEntity<FlightSearchRequest>(flightSearchRequest,headers);
-		// Implement to get the flight departure date
-		// FlightDTO flightDTO =
-		// restTemplate.getForObject("http://localhost:8082/api/v1.0/flight/departuredate/{flightId}",FlightDTO.class,pNR);
-		HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
-		ResponseEntity<FlightDTO> flightDTOResponse = restTemplate.exchange(FLIGHT_URL + "/{flightId}", HttpMethod.GET,
-				jwtEntity, FlightDTO.class, ticketOptional.get().getFlightId());
-		if (Period.between(currentTime, flightDTOResponse.getBody().getDepartureDate()).getDays() < 1) {
+
+		if (Period.between(currentTime, ticket.getDepartureDate()).getDays() < 1) {
 			throw new TicketCannotBeCancelledException("Ticket cannot be cancelled before 24 hours of departure time");
 		}
 
 		List<String> seatNumbers = Arrays.asList(ticket.getSeatNumbers().split("\\|"));
-		UpdateSeatDTO updateseatRequest = new UpdateSeatDTO(seatNumbers.size(), seatNumbers,
-				flightDTOResponse.getBody().getFlightID());
-		HttpEntity<UpdateSeatDTO> seatEntity = new HttpEntity<UpdateSeatDTO>(updateseatRequest,headers);
-		restTemplate.exchange(FLIGHT_URL + "/addseatsback", HttpMethod.POST,
-				seatEntity, ApiResponse.class);
+		UpdateSeatDTO updateseatRequest = new UpdateSeatDTO(seatNumbers.size(), seatNumbers, ticket.getFlightId(),
+				ticket.getDepartureDate());
+		HttpEntity<UpdateSeatDTO> seatEntity = new HttpEntity<UpdateSeatDTO>(updateseatRequest, headers);
+		restTemplate.exchange(FLIGHT_URL + "/addseatsback", HttpMethod.POST, seatEntity, ApiResponse.class);
 		ticketRepository.updateCancelledById(pNR);
 
 	}
@@ -186,13 +172,28 @@ public class BookingService {
 
 	}
 
-	public List<String> getSeatsByFlightId(Integer flightid) throws SeatsNotFoundException {
-		HttpHeaders headers = getHeaders();
-		HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
+	/*
+	 * public List<String> getSeatsByFlightId(Integer flightid) throws
+	 * SeatsNotFoundException { HttpHeaders headers = getHeaders();
+	 * HttpEntity<String> jwtEntity = new HttpEntity<String>(headers);
+	 * 
+	 * try { ResponseEntity<String> flightDTOResponse =
+	 * restTemplate.exchange(FLIGHT_URL + "/availableseat/{flightId}",
+	 * HttpMethod.GET, jwtEntity, String.class, flightid); List<String> seatNumbers
+	 * = Arrays.asList(flightDTOResponse.getBody().split("\\|")); return
+	 * seatNumbers; } catch (Exception ex) { throw new
+	 * SeatsNotFoundException("An unexpected error occured"); }
+	 * 
+	 * }
+	 */
 
+	public List<String> getSeatsBydepartureDate(SearchAvailableSeats search) throws SeatsNotFoundException {
+
+		HttpHeaders headers = getHeaders();
+		HttpEntity<SearchAvailableSeats> jwtEntity = new HttpEntity<SearchAvailableSeats>(search, headers);
 		try {
-			ResponseEntity<String> flightDTOResponse = restTemplate.exchange(FLIGHT_URL + "/availableseat/{flightId}",
-					HttpMethod.GET, jwtEntity, String.class, flightid);
+			ResponseEntity<String> flightDTOResponse = restTemplate.exchange(FLIGHT_URL + "/availableseats",
+					HttpMethod.POST, jwtEntity, String.class);
 			List<String> seatNumbers = Arrays.asList(flightDTOResponse.getBody().split("\\|"));
 			return seatNumbers;
 		} catch (Exception ex) {

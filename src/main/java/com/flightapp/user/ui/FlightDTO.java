@@ -1,9 +1,7 @@
 package com.flightapp.user.ui;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
-import javax.persistence.Column;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

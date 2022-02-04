@@ -1,9 +1,7 @@
 package com.flightapp.user.ui;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-
-import javax.persistence.Column;
 
 import com.flightapp.user.model.mealpreference;
 
@@ -39,5 +37,7 @@ public class TicketDTO {
 	private Boolean isCancelled;
 	
 	private LocalDateTime createdTimeStamp;
+	
+	private LocalDate departureDate;
 
 }

@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -46,7 +47,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 		http.cors();
 		http.csrf().disable().headers().frameOptions().sameOrigin().and().formLogin().disable().authorizeRequests()
-				.antMatchers("/api/v1.0/user/authenticate", "/api/v1.0/user/register").permitAll()
+				.antMatchers("/api/v1.0/user/authenticate", "/api/v1.0/user/register", "/swagger-ui.html/**","/swagger-resources/** ","/webjars/springfox-swagger-ui/**","/v2/api-docs","/spring-security-rest/**").permitAll()
 				.anyRequest().authenticated().and().exceptionHandling()
 				.authenticationEntryPoint(jwtAuthenticationEntryPoint).and().sessionManagement()
 				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
@@ -58,10 +59,16 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
 	}
 	
+	@Override
+	public void configure(WebSecurity web) throws Exception {
+	    web.ignoring().antMatchers("/v2/api-docs", "/configuration/ui", "/swagger-resources/**", "/configuration/**", "/swagger-ui.html", "/webjars/**");
+
+	}
+	
 	@Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
+        configuration.setAllowedOrigins(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE"));
         configuration.setAllowedHeaders(Arrays.asList("Content-Type", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers", "Authorization", "X-Requested-With", "requestId", "Correlation-Id"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -1,9 +1,7 @@
 package com.flightapp.user.ui;
 
+import java.time.LocalDate;
 import java.util.List;
-
-import com.flightapp.user.model.mealpreference;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +18,8 @@ public class UpdateSeatDTO {
 	private List<String> seatNumbers;
 	
 	private Integer flighId;
+	
+	private LocalDate departureDate;
 	
 	
 

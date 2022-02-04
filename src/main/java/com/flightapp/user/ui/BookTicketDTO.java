@@ -1,5 +1,6 @@
 package com.flightapp.user.ui;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -29,6 +30,8 @@ public class BookTicketDTO {
 	private  Double price;
 	
 	private List<String> seatNumbers;
+	
+	private LocalDate departureDate;
 	
 	
 
