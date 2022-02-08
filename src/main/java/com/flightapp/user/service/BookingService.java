@@ -12,6 +12,7 @@ import javax.transaction.Transactional;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -55,7 +56,10 @@ public class BookingService {
 
 	private final JWTutil jwtutil;
 
-	private static final String FLIGHT_URL = "http://localhost:8082/api/v1.0/common/flight";
+	@Value("${flight.url}")
+	private String FLIGHT_URL;
+	//"http://localhost:8082/api/v1.0/common/flight";
+	
 
 	public BookingService(TicketRepository ticketRepository, UserRepository userRepository, ModelMapper modelMapper,
 			RestTemplate restTemplate, JWTutil jwtutil) {
@@ -161,6 +165,7 @@ public class BookingService {
 
 	public List<FlightDTO> getAllFlights(FlightSearchRequest flightSearchRequest) {
 		HttpHeaders headers = getHeaders();
+		System.out.println(FLIGHT_URL);
 		HttpEntity<FlightSearchRequest> jwtEntity = new HttpEntity<FlightSearchRequest>(flightSearchRequest, headers);
 		try {
 			ResponseEntity<FlightDTOList> flightList = restTemplate.exchange(FLIGHT_URL + "/flights", HttpMethod.POST,

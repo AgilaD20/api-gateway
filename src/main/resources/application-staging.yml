@@ -1,0 +1,1 @@
+spring:  datasource:    url: jdbc:mysql://localhost:3306/flightapp    username: root    password: pass@word1  jpa:    show-sql: true  application:    name: user-booking-managerserver:  port: 8083jwt:  secret: access**access   flight:  url: http://flight-manager/api/v1.0/common/flight  
